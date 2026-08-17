@@ -1,280 +1,190 @@
 --[[
-SAN DIEGO TELEPORT HACK - NUR TELEPORT
+SAN DIEGO TELEPORT - NUR TELEPORT, NICHTS ANDERES
 --]]
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
-local StarterGui = game:GetService("StarterGui")
-local RunService = game:GetService("RunService")
-
 local Player = Players.LocalPlayer
+
 if not Player then
     Players.PlayerAdded:Wait()
     Player = Players.LocalPlayer
 end
 
-local IsMinimized = false
-local IsRunning = true
-local Dragging = false
-local DragStart = nil
-local DragStartPos = nil
-
 -- ============================================================
--- TELEPORT FUNKTION
+-- TELEPORT
 -- ============================================================
-local function TeleportTo(targetPos)
+local function Teleport(pos)
     local char = Player.Character
-    if char then
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = CFrame.new(targetPos)
-            return true
-        end
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(pos)
+        return true
     end
     return false
 end
 
 -- ============================================================
--- GUI MIT MINIMIEREN + VERSCHIEBEN (auch im minimierten Zustand)
+-- EINFACHE GUI
 -- ============================================================
-local function CreateGUI()
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SanDiegoTeleportHack"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.Parent = CoreGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "Teleport"
+gui.Parent = CoreGui
 
-    -- Haupt-Frame
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 280, 0, 180)
-    MainFrame.Position = UDim2.new(0.5, -140, 0.5, -90)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Parent = ScreenGui
-    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 120)
+frame.Position = UDim2.new(0.5, -100, 0.5, -60)
+frame.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
-    -- Titelzeile (immer sichtbar + verschiebbar)
-    local TitleBar = Instance.new("Frame")
-    TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(20, 0, 40)
-    TitleBar.BorderSizePixel = 0
-    TitleBar.Parent = MainFrame
-    Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 12)
+-- Titel zum Verschieben
+local title = Instance.new("Frame")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundColor3 = Color3.fromRGB(20, 0, 30)
+title.BorderSizePixel = 0
+title.Parent = frame
+Instance.new("UICorner", title).CornerRadius = UDim.new(0, 10)
 
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -80, 1, 0)
-    Title.Position = UDim2.new(0, 15, 0, 0)
-    Title.BackgroundTransparency = 1
-    Title.Text = "🌀 TELEPORT HACK"
-    Title.TextColor3 = Color3.fromRGB(0, 200, 255)
-    Title.TextSize = 16
-    Title.Font = Enum.Font.GothamBold
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.Parent = TitleBar
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(1, -40, 1, 0)
+label.Position = UDim2.new(0, 10, 0, 0)
+label.BackgroundTransparency = 1
+label.Text = "🌀 Teleport"
+label.TextColor3 = Color3.fromRGB(0, 200, 255)
+label.TextSize = 14
+label.Font = Enum.Font.GothamBold
+label.TextXAlignment = Enum.TextXAlignment.Left
+label.Parent = title
 
-    -- Minimier Button
-    local MinBtn = Instance.new("TextButton")
-    MinBtn.Size = UDim2.new(0, 28, 0, 28)
-    MinBtn.Position = UDim2.new(1, -65, 0, 6)
-    MinBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 40)
-    MinBtn.BorderSizePixel = 0
-    MinBtn.Text = "➖"
-    MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MinBtn.TextSize = 14
-    MinBtn.Font = Enum.Font.GothamBold
-    MinBtn.Parent = TitleBar
-    Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
+-- Minimier Button
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 22, 0, 22)
+minBtn.Position = UDim2.new(1, -55, 0, 4)
+minBtn.BackgroundColor3 = Color3.fromRGB(30, 0, 40)
+minBtn.BorderSizePixel = 0
+minBtn.Text = "➖"
+minBtn.TextColor3 = Color3.fromRGB(255,255,255)
+minBtn.TextSize = 12
+minBtn.Font = Enum.Font.GothamBold
+minBtn.Parent = title
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 4)
 
-    -- Schließen Button
-    local CloseBtn = Instance.new("TextButton")
-    CloseBtn.Size = UDim2.new(0, 28, 0, 28)
-    CloseBtn.Position = UDim2.new(1, -33, 0, 6)
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 40)
-    CloseBtn.BorderSizePixel = 0
-    CloseBtn.Text = "✕"
-    CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-    CloseBtn.TextSize = 14
-    CloseBtn.Font = Enum.Font.GothamBold
-    CloseBtn.Parent = TitleBar
-    Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 22, 0, 22)
+closeBtn.Position = UDim2.new(1, -30, 0, 4)
+closeBtn.BackgroundColor3 = Color3.fromRGB(50, 0, 40)
+closeBtn.BorderSizePixel = 0
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255,100,100)
+closeBtn.TextSize = 12
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = title
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
 
-    -- Content (wird minimiert)
-    local Content = Instance.new("Frame")
-    Content.Size = UDim2.new(1, 0, 1, -40)
-    Content.Position = UDim2.new(0, 0, 0, 40)
-    Content.BackgroundTransparency = 1
-    Content.Parent = MainFrame
+-- Content
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, 0, 1, -30)
+content.Position = UDim2.new(0, 0, 0, 30)
+content.BackgroundTransparency = 1
+content.Parent = frame
 
-    -- Status
-    local Status = Instance.new("TextLabel")
-    Status.Size = UDim2.new(1, -20, 0, 25)
-    Status.Position = UDim2.new(0, 10, 0, 8)
-    Status.BackgroundTransparency = 1
-    Status.Text = "✅ BEREIT - DRÜCKE T"
-    Status.TextColor3 = Color3.fromRGB(100, 255, 150)
-    Status.TextSize = 14
-    Status.Font = Enum.Font.GothamBold
-    Status.Parent = Content
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -10, 0, 20)
+status.Position = UDim2.new(0, 5, 0, 5)
+status.BackgroundTransparency = 1
+status.Text = "✅ Drücke T"
+status.TextColor3 = Color3.fromRGB(100,255,150)
+status.TextSize = 12
+status.Font = Enum.Font.Gotham
+status.Parent = content
 
-    -- Teleport Button
-    local TeleportBtn = Instance.new("TextButton")
-    TeleportBtn.Size = UDim2.new(0, 200, 0, 50)
-    TeleportBtn.Position = UDim2.new(0.5, -100, 0, 40)
-    TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-    TeleportBtn.BorderSizePixel = 0
-    TeleportBtn.Text = "🌀 TELEPORT (T)"
-    TeleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TeleportBtn.TextSize = 18
-    TeleportBtn.Font = Enum.Font.GothamBold
-    TeleportBtn.Parent = Content
-    Instance.new("UICorner", TeleportBtn).CornerRadius = UDim.new(0, 10)
+local teleBtn = Instance.new("TextButton")
+teleBtn.Size = UDim2.new(0, 150, 0, 35)
+teleBtn.Position = UDim2.new(0.5, -75, 0, 30)
+teleBtn.BackgroundColor3 = Color3.fromRGB(0,100,200)
+teleBtn.BorderSizePixel = 0
+teleBtn.Text = "🌀 Teleport (T)"
+teleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+teleBtn.TextSize = 14
+teleBtn.Font = Enum.Font.GothamBold
+teleBtn.Parent = content
+Instance.new("UICorner", teleBtn).CornerRadius = UDim.new(0, 8)
 
-    -- Ziel-Anzeige
-    local TargetLabel = Instance.new("TextLabel")
-    TargetLabel.Size = UDim2.new(1, -20, 0, 20)
-    TargetLabel.Position = UDim2.new(0, 10, 0, 100)
-    TargetLabel.BackgroundTransparency = 1
-    TargetLabel.Text = "🎯 Ziel: Mausposition"
-    TargetLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-    TargetLabel.TextSize = 12
-    TargetLabel.Font = Enum.Font.Gotham
-    TargetLabel.Parent = Content
+-- ============================================================
+-- VERSCHIEBEN
+-- ============================================================
+local drag, start, pos = false
 
-    -- ============================================================
-    -- VERSCHIEBEN (funktioniert immer - auch wenn minimiert)
-    -- ============================================================
-    local function StartDrag(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Dragging = true
-            DragStart = input.Position
-            DragStartPos = MainFrame.Position
-        end
+title.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+        drag = true
+        start = i.Position
+        pos = frame.Position
     end
+end)
 
-    local function EndDrag(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Dragging = false
-        end
+title.InputEnded:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.MouseButton1 then
+        drag = false
     end
+end)
 
-    local function MoveDrag(input)
-        if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - DragStart
-            MainFrame.Position = UDim2.new(
-                DragStartPos.X.Scale,
-                DragStartPos.X.Offset + delta.X,
-                DragStartPos.Y.Scale,
-                DragStartPos.Y.Offset + delta.Y
-            )
-        end
+UserInputService.InputChanged:Connect(function(i)
+    if drag and i.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = i.Position - start
+        frame.Position = UDim2.new(pos.X.Scale, pos.X.Offset + delta.X, pos.Y.Scale, pos.Y.Offset + delta.Y)
     end
+end)
 
-    -- TitleBar (immer aktiv)
-    TitleBar.InputBegan:Connect(StartDrag)
-    TitleBar.InputEnded:Connect(EndDrag)
-
-    -- Auch der minimierte TitleBar bleibt verschiebbar
-    -- Der ganze MainFrame kann auch über die TitleBar verschoben werden
-    UserInputService.InputChanged:Connect(MoveDrag)
-
-    -- ============================================================
-    -- MINIMIEREN
-    -- ============================================================
-    local function ToggleMinimize()
-        IsMinimized = not IsMinimized
-        
-        if IsMinimized then
-            -- Nur Titelzeile anzeigen (40px hoch)
-            TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-                Size = UDim2.new(0, 200, 0, 40)
-            }):Play()
-            Content.Visible = false
-            MinBtn.Text = "➕"
-        else
-            -- Volles GUI anzeigen
-            TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-                Size = UDim2.new(0, 280, 0, 180)
-            }):Play()
-            task.wait(0.3)
-            Content.Visible = true
-            MinBtn.Text = "➖"
-        end
+-- ============================================================
+-- MINIMIEREN
+-- ============================================================
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        frame.Size = UDim2.new(0, 150, 0, 30)
+        content.Visible = false
+        minBtn.Text = "➕"
+    else
+        frame.Size = UDim2.new(0, 200, 0, 120)
+        content.Visible = true
+        minBtn.Text = "➖"
     end
+end)
 
-    MinBtn.MouseButton1Click:Connect(ToggleMinimize)
+closeBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
 
-    CloseBtn.MouseButton1Click:Connect(function()
-        IsRunning = false
-        ScreenGui:Destroy()
-    end)
-
-    -- ============================================================
-    -- TELEPORT
-    -- ============================================================
-    local function DoTeleport()
-        local mouse = Player:GetMouse()
-        if not mouse then return end
-        
-        local targetPos = mouse.Hit.Position
-        local success = TeleportTo(targetPos)
-        
-        if success then
-            Status.Text = "✅ TELEPORTIERT!"
-            Status.TextColor3 = Color3.fromRGB(100, 255, 150)
-            TargetLabel.Text = "🎯 Ziel: " .. string.format("%.1f, %.1f, %.1f", targetPos.X, targetPos.Y, targetPos.Z)
-            
-            -- Flash-Effekt
-            TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 200)
-            task.wait(0.1)
-            TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-        else
-            Status.Text = "❌ TELEPORT FEHLGESCHLAGEN!"
-            Status.TextColor3 = Color3.fromRGB(255, 50, 50)
-        end
+-- ============================================================
+-- TELEPORT
+-- ============================================================
+local function DoTeleport()
+    local mouse = Player:GetMouse()
+    if not mouse then return end
+    
+    local pos = mouse.Hit.Position
+    if Teleport(pos) then
+        status.Text = "✅ Teleportiert!"
+        status.TextColor3 = Color3.fromRGB(100,255,150)
+        teleBtn.BackgroundColor3 = Color3.fromRGB(0,255,150)
+        task.wait(0.1)
+        teleBtn.BackgroundColor3 = Color3.fromRGB(0,100,200)
+    else
+        status.Text = "❌ Fehler!"
+        status.TextColor3 = Color3.fromRGB(255,50,50)
     end
-
-    TeleportBtn.MouseButton1Click:Connect(DoTeleport)
-
-    -- T-Taste
-    UserInputService.InputBegan:Connect(function(input)
-        if input.KeyCode == Enum.KeyCode.T and IsRunning then
-            DoTeleport()
-        end
-    end)
-
-    -- Mausposition anzeigen
-    task.spawn(function()
-        while IsRunning do
-            task.wait(0.1)
-            local mouse = Player:GetMouse()
-            if mouse then
-                local pos = mouse.Hit.Position
-                TargetLabel.Text = string.format("🎯 Maus: %.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z)
-            end
-        end
-    end)
-
-    -- ============================================================
-    -- ANIMATION
-    -- ============================================================
-    MainFrame.BackgroundTransparency = 1
-    TweenService:Create(MainFrame, TweenInfo.new(0.5), {
-        BackgroundTransparency = 0
-    }):Play()
-
-    return ScreenGui
 end
 
--- ============================================================
--- START
--- ============================================================
-local success, err = pcall(CreateGUI)
-if success then
-    print("🌀 SAN DIEGO TELEPORT HACK GELADEN!")
-    print("📋 Drücke T oder klicke auf Teleport")
-    print("📋 Ziehe an der Titelzeile zum Verschieben (auch minimiert)")
-    print("📋 Klicke ➖ zum Minimieren")
-else
-    warn("❌ Fehler: " .. tostring(err))
-end
+teleBtn.MouseButton1Click:Connect(DoTeleport)
+
+UserInputService.InputBegan:Connect(function(i)
+    if i.KeyCode == Enum.KeyCode.T then
+        DoTeleport()
+    end
+end)
+
+print("🌀 Teleport Hack geladen! Drücke T zum Teleportieren.")
