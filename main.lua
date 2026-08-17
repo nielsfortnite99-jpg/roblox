@@ -1,11 +1,13 @@
 --[[
-SAN DIEGO HACK V6 - MIT MINIMIER BUTTON
+SAN DIEGO TELEPORT HACK V1 - NUR TELEPORT + MINIMIERBAR + VERSCHIEBBAR
 --]]
 
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
 
 local Player = Players.LocalPlayer
 if not Player then
@@ -15,26 +17,44 @@ end
 
 local IsMinimized = false
 local IsRunning = true
+local Dragging = false
+local DragStart = nil
+local DragStartPos = nil
 
 -- ============================================================
--- GUI MIT MINIMIER BUTTON
+-- TELEPORT FUNKTION
+-- ============================================================
+local function TeleportTo(targetPos)
+    local char = Player.Character
+    if char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(targetPos)
+            return true
+        end
+    end
+    return false
+end
+
+-- ============================================================
+-- GUI MIT MINIMIEREN + VERSCHIEBEN
 -- ============================================================
 local function CreateGUI()
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SanDiegoHackV6"
+    ScreenGui.Name = "SanDiegoTeleportHack"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.Parent = CoreGui
 
-    -- Haupt-Frame
+    -- Haupt-Frame (verschiebbar)
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 400, 0, 500)
-    MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    MainFrame.Size = UDim2.new(0, 280, 0, 180)
+    MainFrame.Position = UDim2.new(0.5, -140, 0.5, -90)
     MainFrame.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
     MainFrame.BorderSizePixel = 0
     MainFrame.Parent = ScreenGui
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
-    -- Titelzeile (wird immer angezeigt)
+    -- Titelzeile (zum Verschieben)
     local TitleBar = Instance.new("Frame")
     TitleBar.Size = UDim2.new(1, 0, 0, 40)
     TitleBar.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
@@ -46,35 +66,35 @@ local function CreateGUI()
     Title.Size = UDim2.new(1, -80, 1, 0)
     Title.Position = UDim2.new(0, 15, 0, 0)
     Title.BackgroundTransparency = 1
-    Title.Text = "🔥 SD HACK V6"
-    Title.TextColor3 = Color3.fromRGB(255, 50, 50)
-    Title.TextSize = 18
+    Title.Text = "🌀 TELEPORT HACK"
+    Title.TextColor3 = Color3.fromRGB(0, 200, 255)
+    Title.TextSize = 16
     Title.Font = Enum.Font.GothamBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleBar
 
-    -- MINIMIER BUTTON (ganz rechts)
+    -- Minimier Button
     local MinBtn = Instance.new("TextButton")
-    MinBtn.Size = UDim2.new(0, 30, 0, 30)
-    MinBtn.Position = UDim2.new(1, -70, 0, 5)
+    MinBtn.Size = UDim2.new(0, 28, 0, 28)
+    MinBtn.Position = UDim2.new(1, -65, 0, 6)
     MinBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
     MinBtn.BorderSizePixel = 0
     MinBtn.Text = "➖"
     MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    MinBtn.TextSize = 16
+    MinBtn.TextSize = 14
     MinBtn.Font = Enum.Font.GothamBold
     MinBtn.Parent = TitleBar
     Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
-    -- Schließen Button (X)
+    -- Schließen Button
     local CloseBtn = Instance.new("TextButton")
-    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-    CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+    CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+    CloseBtn.Position = UDim2.new(1, -33, 0, 6)
     CloseBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
     CloseBtn.BorderSizePixel = 0
     CloseBtn.Text = "✕"
     CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-    CloseBtn.TextSize = 16
+    CloseBtn.TextSize = 14
     CloseBtn.Font = Enum.Font.GothamBold
     CloseBtn.Parent = TitleBar
     Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
@@ -88,57 +108,83 @@ local function CreateGUI()
 
     -- Status
     local Status = Instance.new("TextLabel")
-    Status.Size = UDim2.new(1, -20, 0, 30)
-    Status.Position = UDim2.new(0, 10, 0, 10)
+    Status.Size = UDim2.new(1, -20, 0, 25)
+    Status.Position = UDim2.new(0, 10, 0, 8)
     Status.BackgroundTransparency = 1
-    Status.Text = "✅ HACK AKTIV"
-    Status.TextColor3 = Color3.fromRGB(255, 50, 50)
-    Status.TextSize = 16
+    Status.Text = "✅ BEREIT - DRÜCKE T"
+    Status.TextColor3 = Color3.fromRGB(100, 255, 150)
+    Status.TextSize = 14
     Status.Font = Enum.Font.GothamBold
     Status.Parent = Content
 
-    -- Buttons
-    local function MakeBtn(text, x, y, color)
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 170, 0, 40)
-        btn.Position = UDim2.new(0, x, 0, y)
-        btn.BackgroundColor3 = color or Color3.fromRGB(30, 0, 0)
-        btn.BorderSizePixel = 0
-        btn.Text = text
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 13
-        btn.Font = Enum.Font.GothamSemibold
-        btn.Parent = Content
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-        return btn
-    end
+    -- Teleport Button
+    local TeleportBtn = Instance.new("TextButton")
+    TeleportBtn.Size = UDim2.new(0, 200, 0, 50)
+    TeleportBtn.Position = UDim2.new(0.5, -100, 0, 40)
+    TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+    TeleportBtn.BorderSizePixel = 0
+    TeleportBtn.Text = "🌀 TELEPORT (T)"
+    TeleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TeleportBtn.TextSize = 18
+    TeleportBtn.Font = Enum.Font.GothamBold
+    TeleportBtn.Parent = Content
+    Instance.new("UICorner", TeleportBtn).CornerRadius = UDim.new(0, 10)
 
-    local farmBtn = MakeBtn("🌾 FARMEN", 20, 50, Color3.fromRGB(40, 0, 0))
-    local afkBtn = MakeBtn("🛡️ ANTI AFK", 205, 50, Color3.fromRGB(40, 0, 0))
-    local godBtn = MakeBtn("👑 GOD MODE", 20, 100, Color3.fromRGB(40, 0, 0))
-    local espBtn = MakeBtn("👁️ ESP", 205, 100, Color3.fromRGB(40, 0, 0))
-    local speedBtn = MakeBtn("🚗 SPEED", 20, 150, Color3.fromRGB(40, 0, 0))
-    local clickBtn = MakeBtn("🖱️ CLICK", 205, 150, Color3.fromRGB(40, 0, 0))
-    local resetBtn = MakeBtn("🔄 RESET", 20, 200, Color3.fromRGB(40, 0, 0))
-    local stopBtn = MakeBtn("🛑 STOP", 205, 200, Color3.fromRGB(80, 0, 0))
+    -- Ziel-Anzeige
+    local TargetLabel = Instance.new("TextLabel")
+    TargetLabel.Size = UDim2.new(1, -20, 0, 20)
+    TargetLabel.Position = UDim2.new(0, 10, 0, 100)
+    TargetLabel.BackgroundTransparency = 1
+    TargetLabel.Text = "🎯 Ziel: Mausposition"
+    TargetLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+    TargetLabel.TextSize = 12
+    TargetLabel.Font = Enum.Font.Gotham
+    TargetLabel.Parent = Content
 
     -- ============================================================
-    -- MINIMIER FUNKTION
+    -- VERSCHIEBEN LOGIK
+    -- ============================================================
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            Dragging = true
+            DragStart = input.Position
+            DragStartPos = MainFrame.Position
+        end
+    end)
+
+    TitleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            Dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - DragStart
+            MainFrame.Position = UDim2.new(
+                DragStartPos.X.Scale,
+                DragStartPos.X.Offset + delta.X,
+                DragStartPos.Y.Scale,
+                DragStartPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    -- ============================================================
+    -- MINIMIEREN
     -- ============================================================
     local function ToggleMinimize()
         IsMinimized = not IsMinimized
         
         if IsMinimized then
-            -- Nur Titelzeile anzeigen (40px hoch)
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-                Size = UDim2.new(0, 200, 0, 40)
+                Size = UDim2.new(0, 180, 0, 40)
             }):Play()
             Content.Visible = false
             MinBtn.Text = "➕"
         else
-            -- Volles GUI anzeigen
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-                Size = UDim2.new(0, 400, 0, 500)
+                Size = UDim2.new(0, 280, 0, 180)
             }):Play()
             task.wait(0.3)
             Content.Visible = true
@@ -146,7 +192,6 @@ local function CreateGUI()
         end
     end
 
-    -- Button Events
     MinBtn.MouseButton1Click:Connect(ToggleMinimize)
 
     CloseBtn.MouseButton1Click:Connect(function()
@@ -155,214 +200,58 @@ local function CreateGUI()
     end)
 
     -- ============================================================
-    -- FARMING
+    -- TELEPORT FUNKTION
     -- ============================================================
-    farmBtn.MouseButton1Click:Connect(function()
-        Status.Text = "🌾 FARMT..."
-        Status.TextColor3 = Color3.fromRGB(255, 200, 50)
+    local function DoTeleport()
+        local mouse = Player:GetMouse()
+        if not mouse then return end
         
-        task.spawn(function()
-            local farmGUI = Player.PlayerGui:FindFirstChild("FarmGUI")
-            if not farmGUI then
-                Status.Text = "❌ FARMGUI FEHLT!"
-                Status.TextColor3 = Color3.fromRGB(255, 0, 0)
-                return
-            end
+        local targetPos = mouse.Hit.Position
+        local success = TeleportTo(targetPos)
+        
+        if success then
+            Status.Text = "✅ TELEPORTIERT!"
+            Status.TextColor3 = Color3.fromRGB(100, 255, 150)
+            TargetLabel.Text = "🎯 Ziel: " .. string.format("%.1f, %.1f, %.1f", targetPos.X, targetPos.Y, targetPos.Z)
             
-            local farms = {"Rings", "Monalis", "JobFarm", "BoatFarm"}
-            for _, name in ipairs(farms) do
-                local btn = farmGUI:FindFirstChild(name .. "Button")
-                if btn then
-                    for i = 1, 10 do
-                        btn:Click()
-                        task.wait(0.1)
-                    end
-                end
-            end
-            Status.Text = "✅ FARMING FERTIG!"
-            Status.TextColor3 = Color3.fromRGB(100, 255, 100)
-        end)
-    end)
-
-    -- ============================================================
-    -- ANTI AFK
-    -- ============================================================
-    local afkActive = true
-    afkBtn.MouseButton1Click:Connect(function()
-        afkActive = not afkActive
-        afkBtn.Text = afkActive and "🛡️ ANTI AFK" or "🔓 ANTI AFK"
-        Status.Text = afkActive and "✅ ANTI AFK AKTIV" or "⏸️ ANTI AFK AUS"
-        Status.TextColor3 = afkActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 200, 50)
-    end)
-
-    -- ============================================================
-    -- GOD MODE
-    -- ============================================================
-    local godActive = false
-    godBtn.MouseButton1Click:Connect(function()
-        godActive = not godActive
-        godBtn.Text = godActive and "👑 GOD ON" or "👑 GOD OFF"
-        
-        if godActive then
-            local char = Player.Character
-            if char then
-                local hum = char:FindFirstChild("Humanoid")
-                if hum then
-                    hum.MaxHealth = math.huge
-                    hum.Health = math.huge
-                end
-            end
-            Status.Text = "👑 GOD MODE AKTIV"
-            Status.TextColor3 = Color3.fromRGB(255, 215, 0)
+            -- Kurzer Flash-Effekt
+            TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+            task.wait(0.1)
+            TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
         else
-            Status.Text = "👑 GOD MODE AUS"
+            Status.Text = "❌ TELEPORT FEHLGESCHLAGEN!"
             Status.TextColor3 = Color3.fromRGB(255, 50, 50)
         end
-    end)
+    end
 
-    -- ============================================================
-    -- ESP
-    -- ============================================================
-    local espActive = false
-    espBtn.MouseButton1Click:Connect(function()
-        espActive = not espActive
-        espBtn.Text = espActive and "👁️ ESP ON" or "👁️ ESP OFF"
-        Status.Text = espActive and "👁️ ESP AKTIV" or "👁️ ESP AUS"
-        Status.TextColor3 = espActive and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 50, 50)
-    end)
+    TeleportBtn.MouseButton1Click:Connect(DoTeleport)
 
-    -- ============================================================
-    -- SPEED
-    -- ============================================================
-    local speedActive = true
-    speedBtn.MouseButton1Click:Connect(function()
-        speedActive = not speedActive
-        speedBtn.Text = speedActive and "🚗 SPEED ON" or "🚗 SPEED OFF"
-        Status.Text = speedActive and "✅ SPEED AKTIV" or "⏸️ SPEED AUS"
-        Status.TextColor3 = speedActive and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 200, 50)
-    end)
-
-    -- ============================================================
-    -- AUTO CLICK
-    -- ============================================================
-    local clickActive = false
-    local clickTask = nil
-    clickBtn.MouseButton1Click:Connect(function()
-        clickActive = not clickActive
-        clickBtn.Text = clickActive and "🖱️ CLICK ON" or "🖱️ CLICK OFF"
-        
-        if clickActive then
-            Status.Text = "🖱️ AUTO CLICK AKTIV"
-            Status.TextColor3 = Color3.fromRGB(100, 255, 100)
-            clickTask = task.spawn(function()
-                while clickActive and IsRunning do
-                    local mouse = Player:GetMouse()
-                    if mouse then
-                        mouse.Button1Click:Fire()
-                    end
-                    task.wait(0.05)
-                end
-            end)
-        else
-            if clickTask then
-                task.cancel(clickTask)
-                clickTask = nil
-            end
-            Status.Text = "⏸️ AUTO CLICK AUS"
-            Status.TextColor3 = Color3.fromRGB(255, 200, 50)
+    -- T-Taste
+    UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.T and IsRunning then
+            DoTeleport()
         end
     end)
 
-    -- ============================================================
-    -- RESET
-    -- ============================================================
-    resetBtn.MouseButton1Click:Connect(function()
-        godActive = false
-        espActive = false
-        clickActive = false
-        afkActive = true
-        speedActive = true
-        
-        godBtn.Text = "👑 GOD MODE"
-        espBtn.Text = "👁️ ESP"
-        clickBtn.Text = "🖱️ CLICK"
-        afkBtn.Text = "🛡️ ANTI AFK"
-        speedBtn.Text = "🚗 SPEED"
-        
-        if clickTask then
-            task.cancel(clickTask)
-            clickTask = nil
-        end
-        
-        Status.Text = "🔄 ALLES ZURÜCKGESETZT"
-        Status.TextColor3 = Color3.fromRGB(255, 200, 50)
-    end)
-
-    -- ============================================================
-    -- STOP
-    -- ============================================================
-    stopBtn.MouseButton1Click:Connect(function()
-        IsRunning = false
-        ScreenGui:Destroy()
-        StarterGui:SetCore("SendNotification", {
-            Title = "🛑 GESTOPPT",
-            Text = "Hack wurde beendet!",
-            Duration = 3
-        })
-    end)
-
-    -- ============================================================
-    -- ANTI AFK SYSTEM
-    -- ============================================================
-    task.spawn(function()
-        local vu = game:GetService("VirtualUser")
-        Player.Idled:Connect(function()
-            if afkActive and IsRunning then
-                vu:CaptureController()
-                vu:ClickButton2(Vector2.new())
-            end
-        end)
-    end)
-
-    -- ============================================================
-    -- SPEED SYSTEM
-    -- ============================================================
-    task.spawn(function()
-        local ui = game:GetService("UserInputService")
-        ui.InputBegan:Connect(function(input)
-            if input.KeyCode == Enum.KeyCode.LeftAlt and speedActive and IsRunning then
-                local char = Player.Character
-                if char then
-                    local veh = char:FindFirstChildOfClass("Vehicle")
-                    if veh then
-                        local spd = veh:FindFirstChild("Speed")
-                        if spd then
-                            spd.Value = 500
-                        end
-                    end
-                end
-            end
-        end)
-    end)
-
-    -- ============================================================
-    -- GOD MODE LOOP
-    -- ============================================================
+    -- Mausposition anzeigen (Live)
     task.spawn(function()
         while IsRunning do
-            if godActive then
-                local char = Player.Character
-                if char then
-                    local hum = char:FindFirstChild("Humanoid")
-                    if hum then
-                        hum.MaxHealth = math.huge
-                        hum.Health = math.huge
-                    end
-                end
+            task.wait(0.1)
+            local mouse = Player:GetMouse()
+            if mouse then
+                local pos = mouse.Hit.Position
+                TargetLabel.Text = string.format("🎯 Maus: %.1f, %.1f, %.1f", pos.X, pos.Y, pos.Z)
             end
-            task.wait(0.5)
         end
     end)
+
+    -- ============================================================
+    -- ANIMATION
+    -- ============================================================
+    MainFrame.BackgroundTransparency = 1
+    TweenService:Create(MainFrame, TweenInfo.new(0.5), {
+        BackgroundTransparency = 0
+    }):Play()
 
     return ScreenGui
 end
@@ -372,8 +261,10 @@ end
 -- ============================================================
 local success, err = pcall(CreateGUI)
 if success then
-    print("🔥 SAN DIEGO HACK V6 - MIT MINIMIER BUTTON!")
-    print("💀 Drücke ➖ um das GUI zu minimieren!")
+    print("🌀 SAN DIEGO TELEPORT HACK GELADEN!")
+    print("📋 Drücke T oder klicke auf Teleport")
+    print("📋 Ziehe an der Titelzeile zum Verschieben")
+    print("📋 Klicke ➖ zum Minimieren")
 else
     warn("❌ Fehler: " .. tostring(err))
 end
