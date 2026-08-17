@@ -1,5 +1,5 @@
 --[[
-SAN DIEGO TELEPORT HACK V1 - NUR TELEPORT + MINIMIERBAR + VERSCHIEBBAR
+SAN DIEGO TELEPORT HACK - NUR TELEPORT
 --]]
 
 local Players = game:GetService("Players")
@@ -37,7 +37,7 @@ local function TeleportTo(targetPos)
 end
 
 -- ============================================================
--- GUI MIT MINIMIEREN + VERSCHIEBEN
+-- GUI MIT MINIMIEREN + VERSCHIEBEN (auch im minimierten Zustand)
 -- ============================================================
 local function CreateGUI()
     local ScreenGui = Instance.new("ScreenGui")
@@ -45,7 +45,7 @@ local function CreateGUI()
     ScreenGui.ResetOnSpawn = false
     ScreenGui.Parent = CoreGui
 
-    -- Haupt-Frame (verschiebbar)
+    -- Haupt-Frame
     local MainFrame = Instance.new("Frame")
     MainFrame.Size = UDim2.new(0, 280, 0, 180)
     MainFrame.Position = UDim2.new(0.5, -140, 0.5, -90)
@@ -54,10 +54,10 @@ local function CreateGUI()
     MainFrame.Parent = ScreenGui
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
-    -- Titelzeile (zum Verschieben)
+    -- Titelzeile (immer sichtbar + verschiebbar)
     local TitleBar = Instance.new("Frame")
     TitleBar.Size = UDim2.new(1, 0, 0, 40)
-    TitleBar.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+    TitleBar.BackgroundColor3 = Color3.fromRGB(20, 0, 40)
     TitleBar.BorderSizePixel = 0
     TitleBar.Parent = MainFrame
     Instance.new("UICorner", TitleBar).CornerRadius = UDim.new(0, 12)
@@ -77,7 +77,7 @@ local function CreateGUI()
     local MinBtn = Instance.new("TextButton")
     MinBtn.Size = UDim2.new(0, 28, 0, 28)
     MinBtn.Position = UDim2.new(1, -65, 0, 6)
-    MinBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+    MinBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 40)
     MinBtn.BorderSizePixel = 0
     MinBtn.Text = "➖"
     MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -90,7 +90,7 @@ local function CreateGUI()
     local CloseBtn = Instance.new("TextButton")
     CloseBtn.Size = UDim2.new(0, 28, 0, 28)
     CloseBtn.Position = UDim2.new(1, -33, 0, 6)
-    CloseBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 40)
     CloseBtn.BorderSizePixel = 0
     CloseBtn.Text = "✕"
     CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
@@ -121,7 +121,7 @@ local function CreateGUI()
     local TeleportBtn = Instance.new("TextButton")
     TeleportBtn.Size = UDim2.new(0, 200, 0, 50)
     TeleportBtn.Position = UDim2.new(0.5, -100, 0, 40)
-    TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+    TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
     TeleportBtn.BorderSizePixel = 0
     TeleportBtn.Text = "🌀 TELEPORT (T)"
     TeleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -142,23 +142,23 @@ local function CreateGUI()
     TargetLabel.Parent = Content
 
     -- ============================================================
-    -- VERSCHIEBEN LOGIK
+    -- VERSCHIEBEN (funktioniert immer - auch wenn minimiert)
     -- ============================================================
-    TitleBar.InputBegan:Connect(function(input)
+    local function StartDrag(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             Dragging = true
             DragStart = input.Position
             DragStartPos = MainFrame.Position
         end
-    end)
+    end
 
-    TitleBar.InputEnded:Connect(function(input)
+    local function EndDrag(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             Dragging = false
         end
-    end)
+    end
 
-    UserInputService.InputChanged:Connect(function(input)
+    local function MoveDrag(input)
         if Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - DragStart
             MainFrame.Position = UDim2.new(
@@ -168,7 +168,15 @@ local function CreateGUI()
                 DragStartPos.Y.Offset + delta.Y
             )
         end
-    end)
+    end
+
+    -- TitleBar (immer aktiv)
+    TitleBar.InputBegan:Connect(StartDrag)
+    TitleBar.InputEnded:Connect(EndDrag)
+
+    -- Auch der minimierte TitleBar bleibt verschiebbar
+    -- Der ganze MainFrame kann auch über die TitleBar verschoben werden
+    UserInputService.InputChanged:Connect(MoveDrag)
 
     -- ============================================================
     -- MINIMIEREN
@@ -177,12 +185,14 @@ local function CreateGUI()
         IsMinimized = not IsMinimized
         
         if IsMinimized then
+            -- Nur Titelzeile anzeigen (40px hoch)
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {
-                Size = UDim2.new(0, 180, 0, 40)
+                Size = UDim2.new(0, 200, 0, 40)
             }):Play()
             Content.Visible = false
             MinBtn.Text = "➕"
         else
+            -- Volles GUI anzeigen
             TweenService:Create(MainFrame, TweenInfo.new(0.3), {
                 Size = UDim2.new(0, 280, 0, 180)
             }):Play()
@@ -200,7 +210,7 @@ local function CreateGUI()
     end)
 
     -- ============================================================
-    -- TELEPORT FUNKTION
+    -- TELEPORT
     -- ============================================================
     local function DoTeleport()
         local mouse = Player:GetMouse()
@@ -214,10 +224,10 @@ local function CreateGUI()
             Status.TextColor3 = Color3.fromRGB(100, 255, 150)
             TargetLabel.Text = "🎯 Ziel: " .. string.format("%.1f, %.1f, %.1f", targetPos.X, targetPos.Y, targetPos.Z)
             
-            -- Kurzer Flash-Effekt
-            TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+            -- Flash-Effekt
+            TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 200)
             task.wait(0.1)
-            TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 150)
+            TeleportBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
         else
             Status.Text = "❌ TELEPORT FEHLGESCHLAGEN!"
             Status.TextColor3 = Color3.fromRGB(255, 50, 50)
@@ -233,7 +243,7 @@ local function CreateGUI()
         end
     end)
 
-    -- Mausposition anzeigen (Live)
+    -- Mausposition anzeigen
     task.spawn(function()
         while IsRunning do
             task.wait(0.1)
@@ -263,7 +273,7 @@ local success, err = pcall(CreateGUI)
 if success then
     print("🌀 SAN DIEGO TELEPORT HACK GELADEN!")
     print("📋 Drücke T oder klicke auf Teleport")
-    print("📋 Ziehe an der Titelzeile zum Verschieben")
+    print("📋 Ziehe an der Titelzeile zum Verschieben (auch minimiert)")
     print("📋 Klicke ➖ zum Minimieren")
 else
     warn("❌ Fehler: " .. tostring(err))
