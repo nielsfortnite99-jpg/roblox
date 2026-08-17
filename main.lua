@@ -8,8 +8,8 @@
 --]]
 
 -- ============================================================
--- SAN DIEGO BORDER ULTIMATE HACK V4 - MEGA ULTRA DELUXE
--- 100% Eigenes Skript - Over 9000 Zeilen Power!
+-- SAN DIEGO BORDER ULTIMATE HACK V5 - MIT MINIMIEREN
+-- 100% Eigenes Skript - Mit Minimier-Button!
 -- ============================================================
 
 -- ============================================================
@@ -50,7 +50,7 @@ local Settings = {
     },
     GodMode = {
         Enabled = true,
-        Mode = "Humanoid" -- Humanoid or Character
+        Mode = "Humanoid"
     },
     ESP = {
         Enabled = true,
@@ -101,6 +101,7 @@ local AllFarmingTasks = {}
 local AllAutoClickTasks = {}
 local ESPObjects = {}
 local IsRunning = true
+local IsMinimized = false
 
 -- ============================================================
 -- STOP FUNCTION
@@ -108,7 +109,6 @@ local IsRunning = true
 local function StopAll()
     IsRunning = false
     
-    -- Alle Tasks stoppen
     for _, taskId in ipairs(AllFarmingTasks) do
         task.cancel(taskId)
     end
@@ -119,14 +119,12 @@ local function StopAll()
     end
     AllAutoClickTasks = {}
     
-    -- ESP entfernen
     for _, obj in ipairs(ESPObjects) do
         obj:Destroy()
     end
     ESPObjects = {}
     
-    -- GUI ausblenden
-    local gui = CoreGui:FindFirstChild("SanDiegoUltimateV4")
+    local gui = CoreGui:FindFirstChild("SanDiegoUltimateV5")
     if gui then
         gui.Enabled = false
         task.wait(0.5)
@@ -142,12 +140,43 @@ local function StopAll()
 end
 
 -- ============================================================
+-- MINIMIEREN / MAXIMIEREN
+-- ============================================================
+local function ToggleMinimize(MainFrame, TitleFrame, ContentFrame, StatusLabel)
+    IsMinimized = not IsMinimized
+    
+    if IsMinimized then
+        -- Minimieren
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 320, 0, 50)
+        }):Play()
+        
+        ContentFrame.Visible = false
+        StatusLabel.Visible = false
+        
+        TitleFrame.Size = UDim2.new(1, 0, 1, 0)
+        
+    else
+        -- Maximieren
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 580, 0, 680)
+        }):Play()
+        
+        task.wait(0.3)
+        ContentFrame.Visible = true
+        StatusLabel.Visible = true
+        
+        TitleFrame.Size = UDim2.new(1, 0, 0, 70)
+    end
+end
+
+-- ============================================================
 -- MEGA GUI SYSTEM
 -- ============================================================
 local function CreateMegaGUI()
     -- Haupt-ScreenGui
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SanDiegoUltimateV4"
+    ScreenGui.Name = "SanDiegoUltimateV5"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.IgnoreGuiInset = true
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -183,7 +212,7 @@ local function CreateMegaGUI()
     Glow.Parent = MainFrame
     Instance.new("UICorner", Glow).CornerRadius = UDim.new(0, 20)
 
-    -- Titel mit Gradient
+    -- Title Frame (wird immer angezeigt)
     local TitleFrame = Instance.new("Frame")
     TitleFrame.Size = UDim2.new(1, 0, 0, 70)
     TitleFrame.Position = UDim2.new(0, 0, 0, 0)
@@ -192,35 +221,69 @@ local function CreateMegaGUI()
     TitleFrame.Parent = MainFrame
     Instance.new("UICorner", TitleFrame).CornerRadius = UDim.new(0, 16)
 
+    -- Titel
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -40, 1, 0)
+    Title.Size = UDim2.new(0.8, -40, 1, 0)
     Title.Position = UDim2.new(0, 20, 0, 0)
     Title.BackgroundTransparency = 1
-    Title.Text = "🔥 SAN DIEGO HACK V4 🔥"
+    Title.Text = "🔥 SD HACK V5 🔥"
     Title.TextColor3 = Color3.fromRGB(255, 50, 50)
-    Title.TextSize = 26
+    Title.TextSize = 22
     Title.Font = Enum.Font.GothamBold
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TitleFrame
 
     local SubTitle = Instance.new("TextLabel")
-    SubTitle.Size = UDim2.new(1, -40, 0, 20)
-    SubTitle.Position = UDim2.new(0, 20, 0, 46)
+    SubTitle.Size = UDim2.new(0.8, -40, 0, 16)
+    SubTitle.Position = UDim2.new(0, 20, 0, 48)
     SubTitle.BackgroundTransparency = 1
-    SubTitle.Text = "💀 MEGA ULTRA HACK EDITION 💀"
+    SubTitle.Text = "💀 MEGA HACK 💀"
     SubTitle.TextColor3 = Color3.fromRGB(200, 100, 100)
-    SubTitle.TextSize = 12
+    SubTitle.TextSize = 10
     SubTitle.Font = Enum.Font.Gotham
     SubTitle.TextXAlignment = Enum.TextXAlignment.Left
     SubTitle.Parent = TitleFrame
 
+    -- Minimier-Button
+    local MinBtn = Instance.new("TextButton")
+    MinBtn.Size = UDim2.new(0, 36, 0, 36)
+    MinBtn.Position = UDim2.new(1, -90, 0, 17)
+    MinBtn.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+    MinBtn.BorderSizePixel = 0
+    MinBtn.Text = "⬇"
+    MinBtn.TextColor3 = Color3.fromRGB(255, 200, 200)
+    MinBtn.TextSize = 18
+    MinBtn.Font = Enum.Font.GothamBold
+    MinBtn.Parent = TitleFrame
+    Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 8)
+
+    -- Schließen-Button (X)
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 36, 0, 36)
+    CloseBtn.Position = UDim2.new(1, -44, 0, 17)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(60, 0, 0)
+    CloseBtn.BorderSizePixel = 0
+    CloseBtn.Text = "✕"
+    CloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    CloseBtn.TextSize = 18
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.Parent = TitleFrame
+    Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 8)
+
+    -- Content Frame (wird minimiert)
+    local ContentFrame = Instance.new("Frame")
+    ContentFrame.Size = UDim2.new(1, 0, 1, -70)
+    ContentFrame.Position = UDim2.new(0, 0, 0, 70)
+    ContentFrame.BackgroundTransparency = 1
+    ContentFrame.Parent = MainFrame
+
     -- Player Info
     local InfoFrame = Instance.new("Frame")
     InfoFrame.Size = UDim2.new(1, -40, 0, 80)
-    InfoFrame.Position = UDim2.new(0, 20, 0, 85)
+    InfoFrame.Position = UDim2.new(0, 20, 0, 15)
     InfoFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
     InfoFrame.BorderSizePixel = 0
-    InfoFrame.Parent = MainFrame
+    InfoFrame.Parent = ContentFrame
     Instance.new("UICorner", InfoFrame).CornerRadius = UDim.new(0, 10)
 
     local PlayerName = Instance.new("TextLabel")
@@ -234,24 +297,36 @@ local function CreateMegaGUI()
     PlayerName.TextXAlignment = Enum.TextXAlignment.Left
     PlayerName.Parent = InfoFrame
 
+    local ServerLabel = Instance.new("TextLabel")
+    ServerLabel.Size = UDim2.new(0.5, -10, 0.5, 0)
+    ServerLabel.Position = UDim2.new(0.5, 10, 0.5, 0)
+    ServerLabel.BackgroundTransparency = 1
+    ServerLabel.Text = "🌐 " .. string.sub(game.JobId, 1, 8) .. "..."
+    ServerLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+    ServerLabel.TextSize = 12
+    ServerLabel.Font = Enum.Font.Gotham
+    ServerLabel.TextXAlignment = Enum.TextXAlignment.Right
+    ServerLabel.Parent = InfoFrame
+
+    -- Status Label
     local StatusLabel = Instance.new("TextLabel")
     StatusLabel.Size = UDim2.new(1, -40, 0, 30)
-    StatusLabel.Position = UDim2.new(0, 20, 0, 180)
+    StatusLabel.Position = UDim2.new(0, 20, 0, 110)
     StatusLabel.BackgroundTransparency = 1
     StatusLabel.Text = "🟢 HACK AKTIV"
     StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
     StatusLabel.TextSize = 18
     StatusLabel.Font = Enum.Font.GothamBold
     StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
-    StatusLabel.Parent = MainFrame
+    StatusLabel.Parent = ContentFrame
 
     -- Fortschrittsbalken
     local ProgressFrame = Instance.new("Frame")
     ProgressFrame.Size = UDim2.new(0.9, 0, 0, 8)
-    ProgressFrame.Position = UDim2.new(0.05, 0, 0, 215)
+    ProgressFrame.Position = UDim2.new(0.05, 0, 0, 145)
     ProgressFrame.BackgroundColor3 = Color3.fromRGB(30, 33, 40)
     ProgressFrame.BorderSizePixel = 0
-    ProgressFrame.Parent = MainFrame
+    ProgressFrame.Parent = ContentFrame
     Instance.new("UICorner", ProgressFrame).CornerRadius = UDim.new(0, 4)
 
     local ProgressBar = Instance.new("Frame")
@@ -264,15 +339,15 @@ local function CreateMegaGUI()
     -- Button Creator
     local function CreateHackButton(text, x, y, color, icon, callback)
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0, 240, 0, 50)
+        btn.Size = UDim2.new(0, 240, 0, 44)
         btn.Position = UDim2.new(0, x, 0, y)
         btn.BackgroundColor3 = color or Color3.fromRGB(30, 0, 0)
         btn.BorderSizePixel = 0
         btn.Text = icon .. " " .. text
         btn.TextColor3 = Color3.fromRGB(255, 200, 200)
-        btn.TextSize = 14
+        btn.TextSize = 13
         btn.Font = Enum.Font.GothamSemibold
-        btn.Parent = MainFrame
+        btn.Parent = ContentFrame
         
         local btnCorner = Instance.new("UICorner")
         btnCorner.CornerRadius = UDim.new(0, 10)
@@ -299,17 +374,28 @@ local function CreateMegaGUI()
     -- ============================================================
     -- HACK BUTTONS
     -- ============================================================
-    local farmBtn = CreateHackButton("MEGA FARMEN", 20, 235, Color3.fromRGB(40, 0, 0), "🌾")
-    local afkBtn = CreateHackButton("ANTI AFK", 280, 235, Color3.fromRGB(40, 0, 0), "🛡️")
-    local deathBtn = CreateHackButton("AUTO DEATH", 20, 295, Color3.fromRGB(40, 0, 0), "💀")
-    local speedBtn = CreateHackButton("SPEED HACK", 280, 295, Color3.fromRGB(40, 0, 0), "🚗")
-    local godBtn = CreateHackButton("GOD MODE", 20, 355, Color3.fromRGB(40, 0, 0), "👑")
-    local espBtn = CreateHackButton("ESP WALLHACK", 280, 355, Color3.fromRGB(40, 0, 0), "👁️")
-    local aimBtn = CreateHackButton("AIMBOT", 20, 415, Color3.fromRGB(40, 0, 0), "🎯")
-    local teleBtn = CreateHackButton("TELEPORT", 280, 415, Color3.fromRGB(40, 0, 0), "🌀")
-    local clickBtn = CreateHackButton("AUTO CLICK", 20, 475, Color3.fromRGB(40, 0, 0), "🖱️")
-    local resetBtn = CreateHackButton("RESET ALL", 280, 475, Color3.fromRGB(40, 0, 0), "🔄")
-    local stopBtn = CreateHackButton("🛑 STOP ALL", 150, 535, Color3.fromRGB(80, 0, 0), "🛑")
+    local farmBtn = CreateHackButton("MEGA FARMEN", 20, 165, Color3.fromRGB(40, 0, 0), "🌾")
+    local afkBtn = CreateHackButton("ANTI AFK", 280, 165, Color3.fromRGB(40, 0, 0), "🛡️")
+    local deathBtn = CreateHackButton("AUTO DEATH", 20, 215, Color3.fromRGB(40, 0, 0), "💀")
+    local speedBtn = CreateHackButton("SPEED HACK", 280, 215, Color3.fromRGB(40, 0, 0), "🚗")
+    local godBtn = CreateHackButton("GOD MODE", 20, 265, Color3.fromRGB(40, 0, 0), "👑")
+    local espBtn = CreateHackButton("ESP WALLHACK", 280, 265, Color3.fromRGB(40, 0, 0), "👁️")
+    local aimBtn = CreateHackButton("AIMBOT", 20, 315, Color3.fromRGB(40, 0, 0), "🎯")
+    local teleBtn = CreateHackButton("TELEPORT", 280, 315, Color3.fromRGB(40, 0, 0), "🌀")
+    local clickBtn = CreateHackButton("AUTO CLICK", 20, 365, Color3.fromRGB(40, 0, 0), "🖱️")
+    local resetBtn = CreateHackButton("RESET ALL", 280, 365, Color3.fromRGB(40, 0, 0), "🔄")
+    local stopBtn = CreateHackButton("🛑 STOP ALL", 150, 415, Color3.fromRGB(80, 0, 0), "🛑")
+
+    -- ============================================================
+    -- MINIMIEREN / MAXIMIEREN LOGIK
+    -- ============================================================
+    MinBtn.MouseButton1Click:Connect(function()
+        ToggleMinimize(MainFrame, TitleFrame, ContentFrame, StatusLabel)
+    end)
+
+    CloseBtn.MouseButton1Click:Connect(function()
+        StopAll()
+    end)
 
     -- ============================================================
     -- MEGA FARMING
@@ -485,11 +571,11 @@ local function CreateMegaGUI()
                         end
                     end
                     if target then
-                        -- Smooth aim
                         local mouse = Player:GetMouse()
                         local pos = target.Position
-                        local screenPos = Camera:WorldToViewportPoint(pos)
-                        if screenPos then
+                        local camera = Workspace.CurrentCamera
+                        local screenPos, onScreen = camera:WorldToViewportPoint(pos)
+                        if onScreen then
                             local smoothX = mouse.X + (screenPos.X - mouse.X) * Settings.Aimbot.Smoothness
                             local smoothY = mouse.Y + (screenPos.Y - mouse.Y) * Settings.Aimbot.Smoothness
                             mouse.Move(smoothX, smoothY)
@@ -680,7 +766,11 @@ local function CreateMegaGUI()
     return {
         ScreenGui = ScreenGui,
         StatusLabel = StatusLabel,
-        ProgressBar = ProgressBar
+        ProgressBar = ProgressBar,
+        MainFrame = MainFrame,
+        TitleFrame = TitleFrame,
+        ContentFrame = ContentFrame,
+        ToggleMinimize = ToggleMinimize
     }
 end
 
@@ -711,119 +801,4 @@ local function AutoDeathSystem()
                     task.wait(Settings.AutoDeath.RespawnDelay)
                     local respawnEvent = ReplicatedStorage:FindFirstChild("RespawnEvent")
                     if respawnEvent then
-                        respawnEvent:FireServer()
-                    end
-                end
-            end)
-        end
-    end
-    
-    if Player.Character then
-        onCharacterAdded(Player.Character)
-    end
-    Player.CharacterAdded:Connect(onCharacterAdded)
-end
-
--- ============================================================
--- SPEED HACK SYSTEM
--- ============================================================
-local function SpeedHackSystem()
-    if not Settings.VehicleSpeed.Enabled then return end
-    
-    UserInputService.InputBegan:Connect(function(input)
-        if input.KeyCode == Settings.VehicleSpeed.Key and speedActive then
-            local char = Player.Character
-            if char then
-                local vehicle = char:FindFirstChildOfClass("Vehicle")
-                if vehicle then
-                    local speed = vehicle:FindFirstChild("Speed")
-                    if speed then
-                        if Settings.VehicleSpeed.SmoothBoost then
-                            for i = speed.Value, Settings.VehicleSpeed.Speed, 10 do
-                                speed.Value = i
-                                task.wait(0.01)
-                            end
-                        else
-                            speed.Value = Settings.VehicleSpeed.Speed
-                        end
-                    end
-                end
-            end
-        end
-    end)
-end
-
--- ============================================================
--- GOD MODE LOOP
--- ============================================================
-local function GodModeLoop()
-    while IsRunning do
-        if godActive then
-            local char = Player.Character
-            if char then
-                local hum = char:FindFirstChild("Humanoid")
-                if hum then
-                    hum.MaxHealth = math.huge
-                    hum.Health = math.huge
-                end
-            end
-        end
-        task.wait(0.5)
-    end
-end
-
--- ============================================================
--- START
--- ============================================================
-local function StartHack()
-    print("🔥 SAN DIEGO HACK V4")
-    print("═" .. string.rep("═", 40))
-    print("👤 Spieler: " .. Player.Name)
-    print("🆔 ID: " .. Player.UserId)
-    print("🌐 Server: " .. game.JobId)
-    print("📦 Version: 4.0 MEGA HACK")
-    print("═" .. string.rep("═", 40))
-    
-    -- GUI erstellen
-    local gui = CreateMegaGUI()
-    
-    -- Systeme starten
-    task.spawn(AntiAFKSystem)
-    task.spawn(AutoDeathSystem)
-    task.spawn(SpeedHackSystem)
-    task.spawn(GodModeLoop)
-    task.spawn(StartMegaFarming)
-    
-    -- Willkommens-Nachricht
-    task.wait(1)
-    StarterGui:SetCore("SendNotification", {
-        Title = "🔥 SAN DIEGO HACK V4",
-        Text = "💀 ALLE HACKS AKTIV! DRÜCKE F12 ZUM STOPPEN",
-        Duration = 5
-    })
-    
-    print("✅ Alle Hacks aktiv!")
-    print("📋 F1 = Farm | F2 = Anti AFK | F3 = Auto Death")
-    print("📋 F4 = Speed | F5 = God Mode | F6 = ESP")
-    print("📋 F7 = Aimbot | F8 = Auto Click | F9 = Reset")
-    print("📋 F12 = STOP ALL")
-end
-
--- ============================================================
--- FEHLERBEHANDLUNG
--- ============================================================
-local success, errorMsg = pcall(StartHack)
-if not success then
-    warn("❌ Fehler: " .. tostring(errorMsg))
-    StarterGui:SetCore("SendNotification", {
-        Title = "❌ FEHLER",
-        Text = "Hack konnte nicht starten: " .. tostring(errorMsg),
-        Duration = 8
-    })
-end
-
--- ============================================================
--- ENDE
--- ============================================================
-print("🔥 SAN DIEGO HACK V4 - Gestartet!")
-print("💀 Viel Spaß beim Hacken!")
+                        resp
