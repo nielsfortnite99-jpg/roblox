@@ -801,4 +801,119 @@ local function AutoDeathSystem()
                     task.wait(Settings.AutoDeath.RespawnDelay)
                     local respawnEvent = ReplicatedStorage:FindFirstChild("RespawnEvent")
                     if respawnEvent then
-                        resp
+                        respawnEvent:FireServer()
+                    end
+                end
+            end)
+        end
+    end
+    
+    if Player.Character then
+        onCharacterAdded(Player.Character)
+    end
+    Player.CharacterAdded:Connect(onCharacterAdded)
+end
+
+-- ============================================================
+-- SPEED HACK SYSTEM
+-- ============================================================
+local function SpeedHackSystem()
+    if not Settings.VehicleSpeed.Enabled then return end
+    
+    UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == Settings.VehicleSpeed.Key and speedActive then
+            local char = Player.Character
+            if char then
+                local vehicle = char:FindFirstChildOfClass("Vehicle")
+                if vehicle then
+                    local speed = vehicle:FindFirstChild("Speed")
+                    if speed then
+                        if Settings.VehicleSpeed.SmoothBoost then
+                            for i = speed.Value, Settings.VehicleSpeed.Speed, 10 do
+                                speed.Value = i
+                                task.wait(0.01)
+                            end
+                        else
+                            speed.Value = Settings.VehicleSpeed.Speed
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- ============================================================
+-- GOD MODE LOOP
+-- ============================================================
+local function GodModeLoop()
+    while IsRunning do
+        if godActive then
+            local char = Player.Character
+            if char then
+                local hum = char:FindFirstChild("Humanoid")
+                if hum then
+                    hum.MaxHealth = math.huge
+                    hum.Health = math.huge
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end
+
+-- ============================================================
+-- START
+-- ============================================================
+local function StartHack()
+    print("🔥 SAN DIEGO HACK V5")
+    print("═" .. string.rep("═", 40))
+    print("👤 Spieler: " .. Player.Name)
+    print("🆔 ID: " .. Player.UserId)
+    print("🌐 Server: " .. game.JobId)
+    print("📦 Version: 5.0 MEGA HACK MIT MINIMIEREN")
+    print("═" .. string.rep("═", 40))
+    
+    -- GUI erstellen
+    local gui = CreateMegaGUI()
+    
+    -- Systeme starten
+    task.spawn(AntiAFKSystem)
+    task.spawn(AutoDeathSystem)
+    task.spawn(SpeedHackSystem)
+    task.spawn(GodModeLoop)
+    task.spawn(StartMegaFarming)
+    
+    -- Willkommens-Nachricht
+    task.wait(1)
+    StarterGui:SetCore("SendNotification", {
+        Title = "🔥 SAN DIEGO HACK V5",
+        Text = "💀 ALLE HACKS AKTIV! DRÜCKE F12 ZUM STOPPEN",
+        Duration = 5
+    })
+    
+    print("✅ Alle Hacks aktiv!")
+    print("📋 F1 = Farm | F2 = Anti AFK | F3 = Auto Death")
+    print("📋 F4 = Speed | F5 = God Mode | F6 = ESP")
+    print("📋 F7 = Aimbot | F8 = Auto Click | F9 = Reset")
+    print("📋 F12 = STOP ALL")
+end
+
+-- ============================================================
+-- FEHLERBEHANDLUNG
+-- ============================================================
+local success, errorMsg = pcall(StartHack)
+if not success then
+    warn("❌ Fehler: " .. tostring(errorMsg))
+    StarterGui:SetCore("SendNotification", {
+        Title = "❌ FEHLER",
+        Text = "Hack konnte nicht starten: " .. tostring(errorMsg),
+        Duration = 8
+    })
+end
+
+-- ============================================================
+-- ENDE
+-- ============================================================
+print("🔥 SAN DIEGO HACK V5 - Gestartet!")
+print("💀 Viel Spaß beim Hacken!")
